@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examen Interactivo de Filosofía y Psicología</title>
+    <!-- Incluimos Tailwind CSS para un estilo moderno y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Incluimos Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Definimos los colores personalizados en el CSS para usarlos con Tailwind */
+        :root {
+            --color-success: #18b968;
+            --color-error: #e7515a;
+            --color-score: #0066cc;
+            --color-star-filled: #f8c32b;
+            --color-text-primary: #222;
+            --color-text-secondary: #888;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Fondo gris claro */
+            color: var(--color-text-primary);
+        }
+
+        .container-quiz {
+            max-width: 900px;
+            background-color: #ffffff;
+        }
+
+        .question-card {
+            background-color: #ffffff;
+        }
+        
+        /* Clases para los estilos de retroalimentación */
+        .answer-button.correct {
+            background-color: var(--color-success);
+            color: white;
+        }
+        .answer-button.incorrect {
+            background-color: var(--color-error);
+            color: white;
+        }
+        .correct-answer-display {
+            background-color: #d1fae5;
+            color: #1a202c;
+            border: 2px solid var(--color-success);
+        }
+        
+        /* Clases para los bordes de la tarjeta de la pregunta */
+        .card-border-correct {
+            border: 2px solid var(--color-success);
+        }
+        .card-border-incorrect {
+            border: 2px solid var(--color-error);
+        }
+
+        /* Animación para el botón "Siguiente" */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .next-pulse {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div id="quiz-container" class="container-quiz mx-auto p-4 md:p-8 rounded-3xl shadow-2xl bg-white border-4 border-gray-100 transition-all duration-300 ease-in-out">
+        
+        <!-- Contenedor del examen, visible durante el quiz -->
+        <div id="quiz-screen">
+            <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-2 text-gray-800">
+                Examen Interactivo de Filosofía y Psicología
+            </h1>
+            <p class="text-base sm:text-lg text-center mb-6 text-gray-600">
+                Responde las siguientes preguntas de opción múltiple.
+            </p>
+            
+            <!-- Botones de acción general -->
+            <div class="flex justify-center flex-wrap gap-4 mb-8">
+                <button id="randomize-btn" class="bg-gray-500 text-white font-bold py-2 px-6 rounded-full shadow-lg hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-transform duration-200 transform scale-100 hover:scale-105 text-sm sm:text-base">
+                    Aleatorizar Preguntas
+                </button>
+                <button id="reset-btn" class="bg-gray-400 text-white font-bold py-2 px-6 rounded-full shadow-lg hover:bg-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-transform duration-200 transform scale-100 hover:scale-105 text-sm sm:text-base">
+                    Reiniciar Examen
+                </button>
+            </div>
+
+            <!-- Tarjeta para la pregunta -->
+            <div id="question-card" class="question-card p-4 sm:p-6 mb-8 rounded-2xl shadow-lg">
+                <p id="question-text" class="text-lg sm:text-xl font-semibold mb-4 text-gray-800"></p>
+                <div id="answers-container" class="space-y-3 sm:space-y-4">
+                    <!-- Los botones de respuesta se generarán aquí con JavaScript -->
+                </div>
+                
+                <!-- Contenedor para los botones de acción (Ver respuesta) -->
+                <div id="action-buttons-container" class="flex flex-col sm:flex-row justify-start gap-4 mt-6">
+                    <button id="show-answer-btn" class="bg-yellow-500 text-white font-bold py-2 px-6 rounded-full shadow-lg hover:bg-yellow-600 focus:outline-none focus:ring-4 focus:ring-yellow-300 transition-transform duration-200 transform scale-100 hover:scale-105">
+                        Ver Respuesta
+                    </button>
+                </div>
+            </div>
+
+            <!-- Área para mostrar retroalimentación y puntuación -->
+            <div id="feedback" class="text-center text-lg font-bold mb-4"></div>
+            <div id="score" class="text-center text-2xl font-bold text-blue-700"></div>
+            
+            <!-- Botones de navegación -->
+            <div class="flex justify-center mt-6 space-x-4">
+                <button id="next-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform duration-200 transform scale-100 hover:scale-105">
+                    Siguiente
+                </button>
+            </div>
+        </div>
+
+        <!-- Contenedor de resultados, oculto inicialmente -->
+        <div id="results-screen" class="hidden">
+            <div class="text-center">
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-800">
+                    ¡Examen Terminado! 🎉
+                </h2>
+                <div id="final-score" class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-blue-700 mb-2"></div>
+                <div id="star-rating" class="flex justify-center mb-6 text-2xl text-yellow-400"></div>
+            </div>
+            
+            <!-- Lista de preguntas para repasar -->
+            <div id="review-list-card" class="mt-8 p-4 sm:p-6 bg-white rounded-2xl shadow-lg">
+                <h3 class="text-xl sm:text-2xl font-bold mb-4 text-red-600">
+                    Preguntas para repasar: 🧐
+                </h3>
+                <ul id="incorrect-questions-list" class="space-y-3 sm:space-y-4">
+                    <!-- Los elementos de la lista se generarán aquí con JavaScript -->
+                </ul>
+            </div>
+            
+            <!-- Botón para reiniciar -->
+            <div class="flex justify-center mt-6">
+                <button id="restart-btn" class="bg-gray-400 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-transform duration-200 transform scale-100 hover:scale-105">
+                    Reiniciar Examen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos con las preguntas, respuestas correctas y opciones incorrectas
+        const quizDataOriginal = [
+            {
+                question: "¿En qué años vivió Sócrates y en qué se enfocaba su pensamiento?",
+                answer: "Vivió entre 469 y 399 a.C.. Se enfocaba en el ser humano, la virtud, el bien y la justicia.",
+                options: [
+                    "Vivió entre 1561 y 1626. Fue pionero del pensamiento empírico moderno, desarrolló el razonamiento inductivo y promovió la observación y la experimentación.",
+                    "Vivió entre 384 y 322 a.C.. Fue discípulo de Platón, tutor de Alejandro Magno y fundador del Liceo.",
+                    "Vivió entre 1724 y 1804. Integró el racionalismo y el empirismo afirmando que la mente posee estructuras innatas (a priori) que organizan la información sensorial.",
+                    "Vivió entre 469 y 399 a.C.. Se enfocaba en el ser humano, la virtud, el bien y la justicia."
+                ]
+            },
+            {
+                question: "Método desarrollado por Sócrates y en qué consiste.",
+                answer: "La mayéutica: un diálogo que ayuda a las personas a descubrir sus propias ideas.",
+                options: [
+                    "El Imperativo Categórico: ley moral universal que reside en la conciencia a priori.",
+                    "La mayéutica: un diálogo que ayuda a las personas a descubrir sus propias ideas.",
+                    "El Mito de la Caverna.",
+                    "Se centraba en investigaciones sobre consumo de alcohol, drogas e inhalantes en la población mexicana, generalmente vinculadas a estudios clínicos y de salud pública."
+                ]
+            },
+            {
+                question: "Frase célebre de Sócrates.",
+                answer: "“La vida no examinada no merece la pena ser vivida”",
+                options: [
+                    "“El comportamiento humano deriva de tres fuentes principales: el deseo, la emoción y el conocimiento”",
+                    "“Pienso, luego existo” (Cogito, ergo sum).",
+                    "“La vida no examinada no merece la pena ser vivida”",
+                    "“El conocimiento es percepción convertida en una idea”"
+                ]
+            },
+            {
+                question: "¿Cuándo vivió Platón y cuál fue su principal teoría?",
+                answer: "Vivió entre 427 y 347 a.C.. Su Teoría de las Ideas diferencia un mundo inteligible (ideas perfectas y eternas) y un mundo sensible (copia imperfecta).",
+                options: [
+                    "Vivió entre 427 y 347 a.C.. Su Teoría de las Ideas diferencia un mundo inteligible (ideas perfectas y eternas) y un mundo sensible (copia imperfecta).",
+                    "Vivió entre 1632 y 1704. Propuso que la mente humana nace sin ideas y todo conocimiento se adquiere por experiencia sensorial.",
+                    "Vivió entre 1832 y 1920. Fue fisiólogo de formación y es considerado el padre de la psicología moderna.",
+                    "Vivió entre 1561 y 1626. Fue pionero del pensamiento empírico moderno, desarrolló el razonamiento inductivo y promovió la observación y la experimentación."
+                ]
+            },
+            {
+                question: "Metáfora usada por Platón para explicar su teoría.",
+                answer: "El Mito de la Caverna.",
+                options: [
+                    "El Mito de la Caverna.",
+                    "La mayéutica: un diálogo que ayuda a las personas a descubrir sus propias ideas.",
+                    "El Imperativo Categórico: ley moral universal que reside en la conciencia a priori.",
+                    "Se centraba en investigaciones sobre consumo de alcohol, drogas e inhalantes en la población mexicana, generalmente vinculadas a estudios clínicos y de salud pública."
+                ]
+            },
+            {
+                question: "Frase célebre de Platón.",
+                answer: "“El comportamiento humano deriva de tres fuentes principales: el deseo, la emoción y el conocimiento”",
+                options: [
+                    "“La virtud no consiste en hacer lo que uno quiere, sino en querer lo que uno hace”",
+                    "“El conocimiento es percepción convertida en una idea”",
+                    "“El comportamiento humano deriva de tres fuentes principales: el deseo, la emoción y el conocimiento”",
+                    "“Pienso, luego existo” (Cogito, ergo sum)."
+                ]
+            },
+            {
+                question: "¿Cuándo vivió Aristóteles y qué hizo en su carrera académica?",
+                answer: "Vivió entre 384 y 322 a.C.. Fue discípulo de Platón, tutor de Alejandro Magno y fundador del Liceo.",
+                options: [
+                    "Vivió entre 1632 y 1677. Propuso una visión monista donde Dios y la Naturaleza son la misma cosa.",
+                    "Vivió entre 1856 y 1939. Recibió influencia de Charcot y Breuer, que llevaron al método de la “cura por el habla”",
+                    "Vivió entre 384 y 322 a.C.. Fue discípulo de Platón, tutor de Alejandro Magno y fundador del Liceo.",
+                    "Vivió entre 1798 y 1857. Defendió que el conocimiento válido debe basarse solo en hechos observables."
+                ]
+            },
+            {
+                question: "Propuesta de Aristóteles sobre el alma.",
+                answer: "Distinguió tres aspectos: vegetativa, animal y racional.",
+                options: [
+                    "Defendió que la realidad existe solo si una mente la percibe (ser es ser percibido).",
+                    "Distinguió tres aspectos: vegetativa, animal y racional.",
+                    "Se centraba en investigaciones sobre consumo de alcohol, drogas e inhalantes en la población mexicana, generalmente vinculadas a estudios clínicos y de salud pública.",
+                    "Propuso que la mente humana nace sin ideas y todo conocimiento se adquiere por experiencia sensorial."
+                ]
+            },
+            {
+                question: "Frase célebre de Aristóteles.",
+                answer: "“La virtud no consiste en hacer lo que uno quiere, sino en querer lo que uno hace”.",
+                options: [
+                    "“La vida no examinada no merece la pena ser vivida”",
+                    "“La virtud no consiste en hacer lo que uno quiere, sino en querer lo que uno hace”.",
+                    "“El conocimiento es percepción convertida en una idea”",
+                    "“No hay nada en el intelecto, que no haya estado antes en los sentidos”."
+                ]
+            },
+            {
+                question: "¿Cuándo vivió Francis Bacon y cuál fue su principal aporte?",
+                answer: "Vivió entre 1561 y 1626. Fue pionero del pensamiento empírico moderno, desarrolló el razonamiento inductivo y promovió la observación y la experimentación.",
+                options: [
+                    "Vivió entre 1561 y 1626. Fue pionero del pensamiento empírico moderno, desarrolló el razonamiento inductivo y promovió la observación y la experimentación.",
+                    "Vivió entre 1838 y 1917. Fue doctor en filosofía y maestro de Sigmund Freud y Edmund Husserl.",
+                    "Vivió entre 1856 y 1939. Recibió influencia de Charcot y Breuer, que llevaron al método de la “cura por el habla”",
+                    "Vivió entre 1632 y 1677. Propuso una visión monista donde Dios y la Naturaleza son la misma cosa."
+                ]
+            },
+            {
+                question: "¿Cuándo vivió John Locke y qué propuso con “Tabula rasa”?",
+                answer: "Vivió entre 1632 y 1704. Propuso que la mente humana nace sin ideas y todo conocimiento se adquiere por experiencia sensorial.",
+                options: [
+                    "Vivió entre 1724 y 1804. Integró el racionalismo y el empirismo afirmando que la mente posee estructuras innatas (a priori).",
+                    "Vivió entre 1596 y 1650. Es considerado el padre de la filosofía moderna por buscar un fundamento indudable para el conocimiento.",
+                    "Vivió entre 1632 y 1704. Propuso que la mente humana nace sin ideas y todo conocimiento se adquiere por experiencia sensorial.",
+                    "Vivió entre 1798 y 1857. Defendió que el conocimiento válido debe basarse solo en hechos observables."
+                ]
+            },
+            {
+                question: "Frase célebre de Locke.",
+                answer: "“No hay nada en el intelecto, que no haya estado antes en los sentidos”.",
+                options: [
+                    "“La virtud no consiste en hacer lo que uno quiere, sino en querer lo que uno hace”.",
+                    "“El comportamiento humano deriva de tres fuentes principales: el deseo, la emoción y el conocimiento”",
+                    "“El conocimiento es percepción convertida en una idea”",
+                    "“No hay nada en el intelecto, que no haya estado antes en los sentidos”."
+                ]
+            },
+            {
+                question: "¿Cuándo vivió George Berkeley y cuál fue su postulado radical?",
+                answer: "Vivió entre 1685 y 1753. Defendió que la realidad existe solo si una mente la percibe (ser es ser percibido).",
+                options: [
+                    "Vivió entre 1596 y 1650. Propuso la distinción entre res extensa y res cogitans.",
+                    "Vivió entre 1685 y 1753. Defendió que la realidad existe solo si una mente la percibe (ser es ser percibido).",
+                    "Vivió entre 1856 y 1939. Recibió influencia de Charcot y Breuer, que llevaron al método de la “cura por el habla”",
+                    "Vivió entre 1632 y 1704. Propuso que la mente humana nace sin ideas y todo conocimiento se adquiere por experiencia sensorial."
+                ]
+            },
+            {
+                question: "Según Berkeley, cuál es la fuente del orden del universo.",
+                answer: "Dios, no la materia.",
+                options: [
+                    "La naturaleza.",
+                    "El Imperativo Categórico.",
+                    "Dios, no la materia.",
+                    "La mente posee estructuras innatas (a priori) que organizan la información sensorial."
+                ]
+            },
+            {
+                question: "¿Cuándo vivió René Descartes y por qué es considerado el padre de la filosofía moderna?",
+                answer: "Vivió entre 1596 y 1650. Es considerado el padre de la filosofía moderna por buscar un fundamento indudable para el conocimiento y establecer la certeza de la existencia a través del pensamiento.",
+                options: [
+                    "Vivió entre 1596 y 1650. Es considerado el padre de la filosofía moderna por buscar un fundamento indudable para el conocimiento y establecer la certeza de la existencia a través del pensamiento.",
+                    "Vivió entre 1632 y 1677. Propuso una visión monista donde Dios y la Naturaleza son la misma cosa.",
+                    "Vivió entre 1798 y 1857. Defendió que el conocimiento válido debe basarse solo en hechos observables.",
+                    "Vivió entre 1832 y 1920. Fue fisiólogo de formación y es considerado el padre de la psicología moderna."
+                ]
+            },
+            {
+                question: "¿Qué distinción propuso Descartes entre realidades?",
+                answer: "Mundo material: res extensa; Mundo espiritual o del pensamiento: res cogitans.",
+                options: [
+                    "Distinguió tres aspectos del alma: vegetativa, animal y racional.",
+                    "Diferencia un mundo inteligible (ideas perfectas y eternas) y un mundo sensible (copia imperfecta).",
+                    "Mundo material: res extensa; Mundo espiritual o del pensamiento: res cogitans.",
+                    "El conocimiento es percepción convertida en una idea."
+                ]
+            },
+            {
+                question: "Frase célebre de Descartes.",
+                answer: "“Pienso, luego existo” (Cogito, ergo sum).",
+                options: [
+                    "“No hay nada en el intelecto, que no haya estado antes en los sentidos”",
+                    "“Pienso, luego existo” (Cogito, ergo sum).",
+                    "“El comportamiento humano deriva de tres fuentes principales: el deseo, la emoción y el conocimiento”",
+                    "“La vida no examinada no merece la pena ser vivida”"
+                ]
+            },
+            {
+                question: "¿Cuándo vivió Baruch Spinoza y qué visión propuso sobre el universo?",
+                answer: "Vivió entre 1632 y 1677. Propuso una visión monista donde Dios y la Naturaleza son la misma cosa (Deus sive Natura), formando una única sustancia con mente y materia como atributos.",
+                options: [
+                    "Vivió entre 1632 y 1677. Propuso una visión monista donde Dios y la Naturaleza son la misma cosa (Deus sive Natura), formando una única sustancia con mente y materia como atributos.",
+                    "Vivió entre 1632 y 1704. Propuso que la mente humana nace sin ideas y todo conocimiento se adquiere por experiencia sensorial.",
+                    "Vivió entre 1724 y 1804. Integró el racionalismo y el empirismo afirmando que la mente posee estructuras innatas (a priori).",
+                    "Vivió entre 1596 y 1650. Es considerado el padre de la filosofía moderna por buscar un fundamento indudable para el conocimiento."
+                ]
+            },
+            {
+                question: "¿Qué papel cumplen las emociones en la filosofía de Spinoza?",
+                answer: "Son parte necesaria de la experiencia humana, derivadas del deseo de autopreservación.",
+                options: [
+                    "Son un resultado de la interacción entre el mundo inteligible y el mundo sensible.",
+                    "Son un reflejo de la 'res extensa' en el mundo material.",
+                    "Son una ley moral universal que reside en la conciencia a priori.",
+                    "Son parte necesaria de la experiencia humana, derivadas del deseo de autopreservación."
+                ]
+            },
+            {
+                question: "¿Cuándo vivió Immanuel Kant y qué síntesis filosófica realizó?",
+                answer: "Vivió entre 1724 y 1804. Integró el racionalismo y el empirismo afirmando que la mente posee estructuras innatas (a priori) que organizan la información sensorial.",
+                options: [
+                    "Vivió entre 1724 y 1804. Integró el racionalismo y el empirismo afirmando que la mente posee estructuras innatas (a priori) que organizan la información sensorial.",
+                    "Vivió entre 1632 y 1704. Propuso que la mente humana nace sin ideas y todo conocimiento se adquiere por experiencia sensorial.",
+                    "Vivió entre 1632 y 1677. Propuso una visión monista donde Dios y la Naturaleza son la misma cosa.",
+                    "Vivió entre 1798 y 1857. Defendió que el conocimiento válido debe basarse solo en hechos observables."
+                ]
+            },
+            {
+                question: "Principio moral fundamental propuesto por Kant.",
+                answer: "El Imperativo Categórico: ley moral universal que reside en la conciencia a priori.",
+                options: [
+                    "La mayéutica: un diálogo que ayuda a las personas a descubrir sus propias ideas.",
+                    "El Imperativo Categórico: ley moral universal que reside en la conciencia a priori.",
+                    "La virtud no consiste en hacer lo que uno quiere, sino en querer lo que uno hace.",
+                    "La vida no examinada no merece la pena ser vivida."
+                ]
+            },
+            {
+                question: "Frase célebre de Kant.",
+                answer: "“El conocimiento es percepción convertida en una idea”",
+                options: [
+                    "“Pienso, luego existo”",
+                    "“El conocimiento es percepción convertida en una idea”",
+                    "“No hay nada en el intelecto, que no haya estado antes en los sentidos”",
+                    "“La vida no examinada no merece la pena ser vivida”"
+                ]
+            },
+            {
+                question: "¿Cuándo vivió Auguste Comte y qué defendió en su positivismo?",
+                answer: "Vivió entre 1798 y 1857. Defendió que el conocimiento válido debe basarse solo en hechos observables y propuso una jerarquía de seis ciencias: matemáticas, astronomía, física, química, biología y sociología.",
+                options: [
+                    "Vivió entre 1798 y 1857. Defendió que el conocimiento válido debe basarse solo en hechos observables y propuso una jerarquía de seis ciencias: matemáticas, astronomía, física, química, biología y sociología.",
+                    "Vivió entre 1832 y 1920. Fue fisiólogo de formación y es considerado el padre de la psicología moderna.",
+                    "Vivió entre 1838 y 1917. Fue doctor en filosofía y maestro de Sigmund Freud y Edmund Husserl.",
+                    "Vivió entre 1856 y 1939. Recibió influencia de Charcot y Breuer."
+                ]
+            },
+            {
+                question: "¿Cuándo vivió Wilhelm Wundt y cuál fue su formación académica?",
+                answer: "Vivió entre 1832 y 1920. Fue fisiólogo de formación y es considerado el padre de la psicología moderna.",
+                options: [
+                    "Vivió entre 1798 y 1857. Defendió que el conocimiento válido debe basarse solo en hechos observables.",
+                    "Vivió entre 1832 y 1920. Fue fisiólogo de formación y es considerado el padre de la psicología moderna.",
+                    "Vivió entre 1838 y 1917. Fue doctor en filosofía y maestro de Sigmund Freud y Edmund Husserl.",
+                    "Vivió entre 1856 y 1939. Recibió influencia de Charcot y Breuer."
+                ]
+            },
+            {
+                question: "¿Qué objetivo tenía la psicología estructural de Wundt?",
+                answer: "Analizar la conciencia en sus elementos básicos, cómo se combinan y su relación con el sistema nervioso.",
+                options: [
+                    "Se centraba en investigaciones sobre consumo de alcohol, drogas e inhalantes en la población mexicana.",
+                    "Analizar la conciencia en sus elementos básicos, cómo se combinan y su relación con el sistema nervioso.",
+                    "Propuso una visión monista donde Dios y la Naturaleza son la misma cosa.",
+                    "Defendió que la realidad existe solo si una mente la percibe."
+                ]
+            },
+            {
+                question: "¿En qué año fundó Wundt el primer laboratorio de psicología experimental?",
+                answer: "En 1897, en Leipzig, Alemania.",
+                options: [
+                    "En 1959, en la UNAM.",
+                    "En 1897, en Leipzig, Alemania.",
+                    "En 1967, en el Primer Congreso Mexicano de Psicología.",
+                    "En 1632, en Holanda."
+                ]
+            },
+            {
+                question: "¿Cuándo vivió Franz Brentano y qué papel tuvo en la formación de otros pensadores?",
+                answer: "Vivió entre 1838 y 1917. Fue doctor en filosofía y maestro de Sigmund Freud y Edmund Husserl.",
+                options: [
+                    "Vivió entre 1838 y 1917. Fue doctor en filosofía y maestro de Sigmund Freud y Edmund Husserl.",
+                    "Vivió entre 1856 y 1939. Recibió influencia de Charcot y Breuer, que llevaron al método de la “cura por el habla”.",
+                    "Vivió entre 1632 y 1704. Propuso que la mente humana nace sin ideas y todo conocimiento se adquiere por experiencia sensorial.",
+                    "Vivió entre 1798 y 1857. Defendió que el conocimiento válido debe basarse solo en hechos observables."
+                ]
+            },
+            {
+                question: "Definición de psicología según Brentano.",
+                answer: "Ciencia de los procesos psíquicos, expresados como actos y procesos (por ejemplo, ver, juzgar), con énfasis en la experiencia subjetiva e intencionalidad.",
+                options: [
+                    "La ciencia de los reflejos condicionados.",
+                    "Analizar la conciencia en sus elementos básicos, cómo se combinan y su relación con el sistema nervioso.",
+                    "Ciencia de los procesos psíquicos, expresados como actos y procesos (por ejemplo, ver, juzgar), con énfasis en la experiencia subjetiva e intencionalidad.",
+                    "Se centraba en investigaciones sobre consumo de alcohol, drogas e inhalantes en la población mexicana."
+                ]
+            },
+            {
+                question: "¿Cuándo vivió Sigmund Freud y qué influencias recibió para desarrollar el psicoanálisis?",
+                answer: "Vivió entre 1856 y 1939. Recibió influencia de Charcot (estudios sobre histeria) y Breuer (Caso Ana O.), que llevaron al método de la “cura por el habla”.",
+                options: [
+                    "Vivió entre 1856 y 1939. Recibió influencia de Charcot (estudios sobre histeria) y Breuer (Caso Ana O.), que llevaron al método de la “cura por el habla”.",
+                    "Vivió entre 1798 y 1857. Defendió que el conocimiento válido debe basarse solo en hechos observables.",
+                    "Vivió entre 1832 y 1920. Fue fisiólogo de formación y es considerado el padre de la psicología moderna.",
+                    "Vivió entre 1838 y 1917. Fue doctor en filosofía y maestro de Sigmund Freud y Edmund Husserl."
+                ]
+            },
+            {
+                question: "Origen del conductismo y figura clave en EE.UU.",
+                answer: "Nació de la reflexología de Iván Pavlov (reflejos condicionados). En EE.UU. destacó B.F. Skinner con el condicionamiento operante.",
+                options: [
+                    "Se centró en investigaciones sobre consumo de alcohol, drogas e inhalantes en la población mexicana.",
+                    "Nació de la reflexología de Iván Pavlov (reflejos condicionados). En EE.UU. destacó B.F. Skinner con el condicionamiento operante.",
+                    "Inspirado en el existencialismo (Kierkegaard, Heidegger, Sartre).",
+                    "Enfoque que combina el psicoanálisis freudiano con la filosofía de la Escuela de Frankfurt."
+                ]
+            },
+            {
+                question: "Raíz filosófica del humanismo y principales exponentes.",
+                answer: "Inspirado en el existencialismo (Kierkegaard, Heidegger, Sartre). Principales exponentes: Abraham Maslow, Carl Rogers y Rollo May.",
+                options: [
+                    "Inspirado en el existencialismo (Kierkegaard, Heidegger, Sartre). Principales exponentes: Abraham Maslow, Carl Rogers y Rollo May.",
+                    "Nació de la reflexología de Iván Pavlov (reflejos condicionados).",
+                    "Enfoque que combina el psicoanálisis freudiano con la filosofía de la Escuela de Frankfurt.",
+                    "Se centró en investigaciones sobre consumo de alcohol, drogas e inhalantes en la población mexicana."
+                ]
+            },
+            {
+                question: "Etapas de la Pirámide de Maslow (en orden).",
+                answer: "Fisiología → Seguridad → Afiliación → Reconocimiento → Autorrealización.",
+                options: [
+                    "Autorrealización → Reconocimiento → Afiliación → Seguridad → Fisiología.",
+                    "Fisiología → Seguridad → Afiliación → Reconocimiento → Autorrealización.",
+                    "Seguridad → Afiliación → Reconocimiento → Fisiología → Autorrealización.",
+                    "Afiliación → Reconocimiento → Fisiología → Seguridad → Autorrealización."
+                ]
+            },
+            {
+                question: "¿Cuál fue el papel inicial de los psicólogos en México?",
+                answer: "En sus inicios, actuaban principalmente como auxiliares de médicos y psiquiatras.",
+                options: [
+                    "Eran considerados los líderes del enfoque transcultural.",
+                    "Fundaron el primer laboratorio de psicología experimental en la UNAM.",
+                    "En sus inicios, actuaban principalmente como auxiliares de médicos y psiquiatras.",
+                    "Introdujeron el Freudo-Marxismo."
+                ]
+            },
+            {
+                question: "¿Qué hecho marcó un hito en la formación profesional de psicólogos en México?",
+                answer: "La fundación de la carrera de Psicología en la UNAM en 1959.",
+                options: [
+                    "El Primer Congreso Mexicano de Psicología (1967).",
+                    "La fundación del laboratorio de Wilhelm Wundt en 1897.",
+                    "La fundación de la carrera de Psicología en la UNAM en 1959.",
+                    "La introducción del Freudo-Marxismo por psicoanalistas argentinos."
+                ]
+            },
+            {
+                question: "Entre 1975 y 1990, menciona tres enfoques predominantes en México.",
+                answer: "Conductismo, psicología transcultural y enfoque psiquiátrico-psicométrico.",
+                options: [
+                    "Conductismo, humanismo y psicoanálisis.",
+                    "Racionalismo, empirismo y apriorismo.",
+                    "Conductismo, psicología transcultural y enfoque psiquiátrico-psicométrico.",
+                    "Freudo-Marxismo, existencialismo y positivismo."
+                ]
+            },
+            {
+                question: "Enfoque Psiquiátrico-Psicométrico.",
+                answer: "Se centraba en investigaciones sobre consumo de alcohol, drogas e inhalantes en la población mexicana, generalmente vinculadas a estudios clínicos y de salud pública.",
+                options: [
+                    "Buscaba una psicología científica y mexicana, estudiando las características psicológicas del pueblo mediante cuestionarios y tests.",
+                    "Analizar la conciencia en sus elementos básicos, cómo se combinan y su relación con el sistema nervioso.",
+                    "Se centraba en investigaciones sobre consumo de alcohol, drogas e inhalantes en la población mexicana, generalmente vinculadas a estudios clínicos y de salud pública.",
+                    "Defendió el enfoque estímulo-respuesta como la única postura científica válida."
+                ]
+            },
+            {
+                question: "Enfoque Transcultural.",
+                answer: "Buscaba una psicología científica y mexicana, estudiando las características psicológicas del pueblo mediante cuestionarios y tests. Surgió como reacción contra las posiciones especulativas y la dependencia de la psiquiatría extranjera.",
+                options: [
+                    "Se centraba en investigaciones sobre consumo de alcohol, drogas e inhalantes en la población mexicana.",
+                    "Buscaba una psicología científica y mexicana, estudiando las características psicológicas del pueblo mediante cuestionarios y tests. Surgió como reacción contra las posiciones especulativas y la dependencia de la psiquiatría extranjera.",
+                    "Enfoque que combina el psicoanálisis freudiano con la filosofía de la Escuela de Frankfurt.",
+                    "Defendió el enfoque estímulo-respuesta como la única postura científica válida."
+                ]
+            },
+            {
+                question: "Movimiento Conductista en México.",
+                answer: "Liderado por Emilio Ribes. En el Primer Congreso Mexicano de Psicología (1967) defendió el enfoque estímulo-respuesta como la única postura científica válida y criticó la brecha entre la teoría universitaria y la práctica profesional.",
+                options: [
+                    "Liderado por Abraham Maslow. Inspirado en el existencialismo.",
+                    "Liderado por Wilhelm Wundt. Se enfocaba en analizar la conciencia en sus elementos básicos.",
+                    "Liderado por Baruch Spinoza. Propuso una visión monista del universo.",
+                    "Liderado por Emilio Ribes. En el Primer Congreso Mexicano de Psicología (1967) defendió el enfoque estímulo-respuesta como la única postura científica válida y criticó la brecha entre la teoría universitaria y la práctica profesional."
+                ]
+            },
+            {
+                question: "Freudo-Marxismo.",
+                answer: "Enfoque que combina el psicoanálisis freudiano con la filosofía de la Escuela de Frankfurt (Marcuse, Adorno). Fue introducido en México principalmente por psicoanalistas argentinos.",
+                options: [
+                    "Enfoque que combina el psicoanálisis freudiano con la filosofía de la Escuela de Frankfurt (Marcuse, Adorno). Fue introducido en México principalmente por psicoanalistas argentinos.",
+                    "Enfoque que busca una psicología científica y mexicana, estudiando las características psicológicas del pueblo.",
+                    "Enfoque centrado en investigaciones sobre consumo de alcohol, drogas e inhalantes en la población mexicana.",
+                    "Enfoque que propone que el conocimiento válido debe basarse solo en hechos observables."
+                ]
+            },
+            {
+                question: "Empirismo – John Locke (1632-1704).",
+                answer: "“No hay nada en el intelecto, que no haya estado antes en los sentidos”",
+                options: [
+                    "“Pienso, luego existo”",
+                    "“El conocimiento es percepción convertida en una idea”",
+                    "“La vida no examinada no merece la pena ser vivida”",
+                    "“No hay nada en el intelecto, que no haya estado antes en los sentidos”"
+                ]
+            },
+            {
+                question: "Racionalismo – René Descartes (1596-1650).",
+                answer: "“Pienso, luego existo”",
+                options: [
+                    "“La virtud no consiste en hacer lo que uno quiere, sino en querer lo que uno hace”",
+                    "“Pienso, luego existo”",
+                    "“La vida no examinada no merece la pena ser vivida”",
+                    "“No hay nada en el intelecto, que no haya estado antes en los sentidos”"
+                ]
+            },
+            {
+                question: "Apriorismo – Immanuel Kant (1724-1804).",
+                answer: "“El conocimiento es percepción convertida en una idea”",
+                options: [
+                    "“El comportamiento humano deriva de tres fuentes: el deseo, la emoción y el conocimiento”",
+                    "“Pienso, luego existo”",
+                    "“El conocimiento es percepción convertida en una idea”",
+                    "“La virtud no consiste en hacer lo que uno quiere, sino en querer lo que uno hace”"
+                ]
+            },
+            {
+                question: "Sócrates (469-399 a.C.).",
+                answer: "“La vida no examinada no merece la pena ser vivida”",
+                options: [
+                    "“El comportamiento humano deriva de tres fuentes: el deseo, la emoción y el conocimiento”",
+                    "“Pienso, luego existo”",
+                    "“La vida no examinada no merece la pena ser vivida”",
+                    "“El conocimiento es percepción convertida en una idea”"
+                ]
+            },
+            {
+                question: "Platón (427-347 a.C.).",
+                answer: "“El comportamiento humano deriva de tres fuentes: el deseo, la emoción y el conocimiento”",
+                options: [
+                    "“El comportamiento humano deriva de tres fuentes: el deseo, la emoción y el conocimiento”",
+                    "“La virtud no consiste en hacer lo que uno quiere, sino en querer lo que uno hace”",
+                    "“La vida no examinada no merece la pena ser vivida”",
+                    "“El conocimiento es percepción convertida en una idea”"
+                ]
+            },
+            {
+                question: "Aristóteles (384-322 a.C.).",
+                answer: "“La virtud no consiste en hacer lo que uno quiere, sino en querer lo que uno hace”.",
+                options: [
+                    "“Pienso, luego existo”",
+                    "“La virtud no consiste en hacer lo que uno quiere, sino en querer lo que uno hace”.",
+                    "“No hay nada en el intelecto, que no haya estado antes en los sentidos”",
+                    "“La vida no examinada no merece la pena ser vivida”"
+                ]
+            }
+        ];
+
+        let quizData = [...quizDataOriginal];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let isAnswered = false;
+        let incorrectQuestions = [];
+
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const questionCard = document.getElementById('question-card');
+        const questionText = document.getElementById('question-text');
+        const answersContainer = document.getElementById('answers-container');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const feedback = document.getElementById('feedback');
+        const scoreDisplay = document.getElementById('score');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const starRatingContainer = document.getElementById('star-rating');
+        const incorrectQuestionsList = document.getElementById('incorrect-questions-list');
+        const showAnswerBtn = document.getElementById('show-answer-btn');
+        const randomizeBtn = document.getElementById('randomize-btn');
+        const resetButton = document.getElementById('reset-btn');
+
+        // Función para mezclar un array
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Guarda el estado actual del quiz en el almacenamiento local
+        function saveQuizState() {
+            const state = {
+                quizData,
+                currentQuestionIndex,
+                score,
+                incorrectQuestions,
+                timestamp: new Date().getTime()
+            };
+            localStorage.setItem('quizState', JSON.stringify(state));
+        }
+
+        // Carga el estado del quiz desde el almacenamiento local
+        function loadQuizState() {
+            const savedState = localStorage.getItem('quizState');
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                const now = new Date().getTime();
+                // 5 horas en milisegundos
+                const fiveHours = 5 * 60 * 60 * 1000; 
+
+                if (now - state.timestamp < fiveHours) {
+                    quizData = state.quizData;
+                    currentQuestionIndex = state.currentQuestionIndex;
+                    score = state.score;
+                    incorrectQuestions = state.incorrectQuestions;
+                    // Mostramos la primera pregunta, si el quiz ya había terminado, se muestra la pantalla de resultados
+                    if (currentQuestionIndex < quizData.length) {
+                        showQuestion();
+                    } else {
+                        showFinalResults();
+                    }
+                    console.log("Estado del quiz cargado desde la última sesión.");
+                } else {
+                    console.log("El estado guardado ha caducado. Iniciando un nuevo quiz.");
+                    startNewQuiz();
+                }
+            } else {
+                console.log("No se encontró estado guardado. Iniciando un nuevo quiz.");
+                startNewQuiz();
+            }
+        }
+
+        // Inicia un nuevo quiz
+        function startNewQuiz(isRandom = false) {
+            if (isRandom) {
+                quizData = [...quizDataOriginal];
+                shuffleArray(quizData);
+            } else {
+                quizData = [...quizDataOriginal];
+            }
+            currentQuestionIndex = 0;
+            score = 0;
+            incorrectQuestions = [];
+            localStorage.removeItem('quizState');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            showQuestion();
+        }
+
+        // Muestra la pregunta actual y sus opciones
+        function showQuestion() {
+            isAnswered = false;
+            answersContainer.innerHTML = '';
+            feedback.textContent = '';
+            nextBtn.textContent = 'Siguiente';
+            
+            // Se mantiene el botón de ver respuesta
+            showAnswerBtn.classList.remove('hidden');
+            
+            // Limpiamos los bordes de la tarjeta de la pregunta
+            questionCard.classList.remove('card-border-correct', 'card-border-incorrect');
+            questionCard.id = `question-card-${currentQuestionIndex}`;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionText.textContent = `${currentQuestionIndex + 1}. ${currentQuestion.question}`;
+
+            shuffleArray(currentQuestion.options);
+
+            currentQuestion.options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('answer-button', 'w-full', 'p-3', 'sm:p-4', 'bg-gray-100', 'hover:bg-gray-200', 'rounded-xl', 'text-left', 'text-gray-800', 'text-sm', 'sm:text-base', 'font-medium', 'focus:outline-none', 'transition-colors', 'duration-200');
+                
+                button.addEventListener('click', () => {
+                    checkAnswer(button, option);
+                });
+                answersContainer.appendChild(button);
+            });
+
+            scoreDisplay.textContent = `Puntuación: ${score} de ${quizData.length}`;
+            nextBtn.classList.remove('next-pulse');
+            saveQuizState();
+        }
+
+        // Verifica la respuesta del usuario
+        function checkAnswer(selectedButton, selectedOption) {
+            if (isAnswered) return;
+
+            isAnswered = true;
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedOption === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedback.textContent = '¡Correcto! ✅';
+                feedback.classList.remove('text-red-600');
+                feedback.classList.add('text-green-600');
+                selectedButton.classList.add('correct');
+                questionCard.classList.add('card-border-correct');
+            } else {
+                feedback.textContent = 'Incorrecto. ❌';
+                feedback.classList.remove('text-green-600');
+                feedback.classList.add('text-red-600');
+                selectedButton.classList.add('incorrect');
+                questionCard.classList.add('card-border-incorrect');
+                
+                incorrectQuestions.push({
+                    index: currentQuestionIndex,
+                    question: currentQuestion.question,
+                    correctAnswer: currentQuestion.answer
+                });
+                
+                const buttons = answersContainer.querySelectorAll('.answer-button');
+                buttons.forEach(btn => {
+                    if (btn.textContent === currentQuestion.answer) {
+                        btn.classList.add('correct-answer-display');
+                    }
+                });
+            }
+            
+            disableAnswerButtons();
+            nextBtn.classList.add('next-pulse');
+            showAnswerBtn.classList.add('hidden');
+            saveQuizState();
+        }
+
+        // Deshabilita los botones de respuesta
+        function disableAnswerButtons() {
+            const allButtons = answersContainer.querySelectorAll('.answer-button');
+            allButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-gray-200');
+                btn.classList.add('cursor-not-allowed');
+            });
+        }
+        
+        // Muestra la respuesta correcta
+        function showCorrectAnswer() {
+            if (isAnswered) return;
+            isAnswered = true;
+            
+            const currentQuestion = quizData[currentQuestionIndex];
+            const buttons = answersContainer.querySelectorAll('.answer-button');
+            buttons.forEach(btn => {
+                if (btn.textContent === currentQuestion.answer) {
+                    btn.classList.add('correct-answer-display');
+                }
+            });
+
+            feedback.textContent = `Respuesta correcta: ${currentQuestion.answer}`;
+            feedback.classList.remove('text-green-600', 'text-red-600');
+            feedback.classList.add('text-gray-800');
+            
+            disableAnswerButtons();
+            showAnswerBtn.classList.add('hidden');
+            nextBtn.classList.add('next-pulse');
+        }
+
+        // Muestra la pantalla de resultados finales
+        function showFinalResults() {
+            localStorage.removeItem('quizState');
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            finalScoreDisplay.textContent = `${score} de ${quizData.length} correctas`;
+
+            // Generar calificación de estrellas
+            starRatingContainer.innerHTML = '';
+            const totalStars = 5;
+            const filledStars = Math.round((score / quizData.length) * totalStars);
+            for (let i = 0; i < totalStars; i++) {
+                const star = document.createElement('i');
+                star.classList.add('fas', 'fa-star');
+                if (i >= filledStars) {
+                    star.classList.remove('text-yellow-400');
+                    star.classList.add('text-gray-300');
+                }
+                starRatingContainer.appendChild(star);
+            }
+
+            // Llenar la lista de preguntas para repasar
+            incorrectQuestionsList.innerHTML = '';
+            if (incorrectQuestions.length > 0) {
+                incorrectQuestions.forEach(item => {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('flex', 'items-start', 'flex-col', 'sm:flex-row', 'space-y-2', 'sm:space-y-0', 'sm:space-x-3', 'p-4', 'bg-gray-50', 'rounded-xl', 'shadow-sm', 'cursor-pointer', 'hover:bg-gray-100');
+                    listItem.innerHTML = `
+                        <div class="flex-shrink-0 mt-1">
+                            <span class="text-xl text-red-500">❌</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-800">${item.question}</p>
+                            <p class="text-sm text-gray-600">
+                                <span class="font-semibold text-green-600">Respuesta correcta:</span> ${item.correctAnswer}
+                            </p>
+                        </div>
+                    `;
+                    // Agregamos el evento de clic para desplazarse
+                    listItem.addEventListener('click', () => scrollToQuestion(item.index));
+                    incorrectQuestionsList.appendChild(listItem);
+                });
+            } else {
+                incorrectQuestionsList.innerHTML = `
+                    <p class="text-center text-gray-500 italic">¡Felicidades! Respondiste todas las preguntas correctamente. 🎉</p>
+                `;
+            }
+        }
+
+        // Desplaza la vista a la tarjeta de una pregunta específica
+        function scrollToQuestion(index) {
+            const questionElement = document.getElementById(`question-card-${index}`);
+            if (questionElement) {
+                // Navegar de vuelta a la pantalla del quiz antes de desplazar
+                resultsScreen.classList.add('hidden');
+                quizScreen.classList.remove('hidden');
+                
+                // Desplazamiento suave a la pregunta
+                questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // Pasa a la siguiente pregunta
+        function nextQuestion() {
+            if (!isAnswered) {
+                return;
+            }
+
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                showQuestion();
+            } else {
+                showFinalResults();
+            }
+        }
+
+        // Asignar los eventos a los botones
+        nextBtn.addEventListener('click', nextQuestion);
+        randomizeBtn.addEventListener('click', () => startNewQuiz(true));
+        resetButton.addEventListener('click', () => startNewQuiz(false));
+        restartBtn.addEventListener('click', () => startNewQuiz(false));
+        showAnswerBtn.addEventListener('click', showCorrectAnswer);
+
+        // Iniciar el quiz al cargar la página o cargar estado guardado
+        window.onload = loadQuizState;
+    </script>
+</body>
+</html>
