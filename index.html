@@ -775,8 +775,10 @@
             // Iniciar temporizador para avanzar automáticamente después de 5 segundos
             timerId = setTimeout(nextQuestion, 5000);
             
-            // Añadir listener al body para avance inmediato al hacer clic en cualquier lugar
-            body.addEventListener('click', skipTimer, { once: true });
+            // Permitir saltar después de este clic (evitar capturar el mismo clic)
+            setTimeout(() => {
+                body.addEventListener('click', skipTimer, { once: true });
+            }, 0);
         }
         
         // Función para saltar el temporizador
@@ -821,8 +823,10 @@
             // Iniciar temporizador para avanzar automáticamente después de 5 segundos
             timerId = setTimeout(nextQuestion, 5000);
             
-            // Añadir listener al body para avance inmediato al hacer clic en cualquier lugar
-            body.addEventListener('click', skipTimer, { once: true });
+            // Permitir saltar después de este clic (evitar capturar el mismo clic)
+            setTimeout(() => {
+                body.addEventListener('click', skipTimer, { once: true });
+            }, 0);
         }
 
         // Muestra la pantalla de resultados finales
