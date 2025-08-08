@@ -605,6 +605,7 @@
         let score = 0;
         let isAnswered = false;
         let incorrectQuestions = [];
+        let timerId;
 
         const quizScreen = document.getElementById('quiz-screen');
         const resultsScreen = document.getElementById('results-screen');
@@ -621,6 +622,7 @@
         const showAnswerBtn = document.getElementById('show-answer-btn');
         const randomizeBtn = document.getElementById('randomize-btn');
         const resetButton = document.getElementById('reset-btn');
+        const body = document.body;
 
         // Función para mezclar un array
         function shuffleArray(array) {
@@ -697,6 +699,11 @@
             feedback.textContent = '';
             nextBtn.textContent = 'Siguiente';
             
+            // Limpiamos cualquier temporizador anterior
+            if (timerId) clearTimeout(timerId);
+            
+            // Ocultamos la explicación de la IA
+            
             // Se mantiene el botón de ver respuesta
             showAnswerBtn.classList.remove('hidden');
             
@@ -725,7 +732,7 @@
             saveQuizState();
         }
 
-        // Verifica la respuesta del usuario
+        // Verifica la respuesta del usuario y programa el avance automático
         function checkAnswer(selectedButton, selectedOption) {
             if (isAnswered) return;
 
@@ -762,9 +769,23 @@
             }
             
             disableAnswerButtons();
-            nextBtn.classList.add('next-pulse');
             showAnswerBtn.classList.add('hidden');
             saveQuizState();
+            
+            // Iniciar temporizador para avanzar automáticamente después de 1.5 segundos
+            timerId = setTimeout(nextQuestion, 1500);
+            
+            // Añadir listener al body para avance inmediato al hacer clic en cualquier lugar
+            body.addEventListener('click', skipTimer, { once: true });
+        }
+        
+        // Función para saltar el temporizador
+        function skipTimer() {
+            if (timerId) {
+                clearTimeout(timerId);
+                timerId = null;
+                nextQuestion();
+            }
         }
 
         // Deshabilita los botones de respuesta
@@ -796,7 +817,12 @@
             
             disableAnswerButtons();
             showAnswerBtn.classList.add('hidden');
-            nextBtn.classList.add('next-pulse');
+            
+            // Iniciar temporizador para avanzar automáticamente después de 1.5 segundos
+            timerId = setTimeout(nextQuestion, 1500);
+            
+            // Añadir listener al body para avance inmediato al hacer clic en cualquier lugar
+            body.addEventListener('click', skipTimer, { once: true });
         }
 
         // Muestra la pantalla de resultados finales
