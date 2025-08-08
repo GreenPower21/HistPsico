@@ -606,7 +606,11 @@
         let isAnswered = false;
         let incorrectQuestions = [];
         let timerId;
-
+        
+        // Tiempo por pregunta (ms)
+        const QUESTION_TIMEOUT_MS = 15000; // 15 s
+        const AUTO_ADVANCE_DELAY_MS = 1200; // 1.2 s
+        
         const quizScreen = document.getElementById('quiz-screen');
         const resultsScreen = document.getElementById('results-screen');
         const questionCard = document.getElementById('question-card');
@@ -730,10 +734,18 @@
             scoreDisplay.textContent = `Puntuación: ${score} de ${quizData.length}`;
             nextBtn.classList.remove('next-pulse');
             saveQuizState();
+
+            // Arranca el temporizador para avanzar automáticamente si no se responde
+            timerId = setTimeout(() => {
+                if (!isAnswered) {
+                    showCorrectAnswer(AUTO_ADVANCE_DELAY_MS);
+                }
+            }, QUESTION_TIMEOUT_MS);
         }
 
         // Verifica la respuesta del usuario y programa el avance automático
         function checkAnswer(selectedButton, selectedOption) {
+            if (timerId) { clearTimeout(timerId); timerId = null; }
             if (isAnswered) return;
 
             isAnswered = true;
@@ -801,7 +813,8 @@
         }
         
         // Muestra la respuesta correcta
-        function showCorrectAnswer() {
+        function showCorrectAnswer(autoNextDelayMs = 5000) {
+            if (timerId) { clearTimeout(timerId); timerId = null; }
             if (isAnswered) return;
             isAnswered = true;
             
@@ -820,8 +833,8 @@
             disableAnswerButtons();
             showAnswerBtn.classList.add('hidden');
             
-            // Iniciar temporizador para avanzar automáticamente después de 5 segundos
-            timerId = setTimeout(nextQuestion, 5000);
+            // Iniciar temporizador para avanzar automáticamente después de autoNextDelayMs
+            timerId = setTimeout(nextQuestion, autoNextDelayMs);
             
             // Permitir saltar después de este clic (evitar capturar el mismo clic)
             setTimeout(() => {
