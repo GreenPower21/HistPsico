@@ -818,8 +818,8 @@
             disableAnswerButtons();
             showAnswerBtn.classList.add('hidden');
             
-            // Iniciar temporizador para avanzar automáticamente después de 1.5 segundos
-            timerId = setTimeout(nextQuestion, 1500);
+            // Iniciar temporizador para avanzar automáticamente después de 5 segundos
+            timerId = setTimeout(nextQuestion, 5000);
             
             // Añadir listener al body para avance inmediato al hacer clic en cualquier lugar
             body.addEventListener('click', skipTimer, { once: true });
