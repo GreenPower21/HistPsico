@@ -38,10 +38,14 @@
         .answer-button.correct {
             background-color: var(--color-success);
             color: white;
+            position: relative;
+            overflow: hidden;
         }
         .answer-button.incorrect {
             background-color: var(--color-error);
             color: white;
+            position: relative;
+            overflow: hidden;
         }
         .correct-answer-display {
             background-color: #d1fae5;
@@ -64,6 +68,64 @@
         }
         .next-pulse {
             animation: pulse 1s infinite;
+        }
+        
+        /* Nueva animación para la respuesta seleccionada */
+        .answer-button.animate-border-correct::before,
+        .answer-button.animate-border-incorrect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.75rem; /* rounded-xl */
+            animation: draw-border 1.2s forwards;
+            pointer-events: none;
+        }
+        
+        .answer-button.animate-border-correct::before {
+            border: 3px solid var(--color-success);
+            box-shadow: 0 0 10px var(--color-success);
+        }
+        
+        .answer-button.animate-border-incorrect::before {
+            border: 3px solid var(--color-error);
+            box-shadow: 0 0 10px var(--color-error);
+        }
+        
+        @keyframes draw-border {
+            0% {
+                width: 0;
+                height: 0;
+                border-top-width: 0;
+                border-right-width: 0;
+                border-bottom-width: 0;
+                border-left-width: 0;
+            }
+            25% {
+                width: 100%;
+                height: 0;
+                border-top-width: 3px;
+            }
+            50% {
+                width: 100%;
+                height: 100%;
+                border-right-width: 3px;
+                border-top-width: 3px;
+            }
+            75% {
+                width: 100%;
+                height: 100%;
+                border-bottom-width: 3px;
+                border-right-width: 3px;
+                border-top-width: 3px;
+            }
+            100% {
+                width: 100%;
+                height: 100%;
+                border-width: 3px;
+            }
         }
     </style>
 </head>
@@ -622,7 +684,6 @@
         const showAnswerBtn = document.getElementById('show-answer-btn');
         const randomizeBtn = document.getElementById('randomize-btn');
         const resetButton = document.getElementById('reset-btn');
-        const body = document.body;
 
         // Función para mezclar un array
         function shuffleArray(array) {
@@ -702,8 +763,6 @@
             // Limpiamos cualquier temporizador anterior
             if (timerId) clearTimeout(timerId);
             
-            // Ocultamos la explicación de la IA
-            
             // Se mantiene el botón de ver respuesta
             showAnswerBtn.classList.remove('hidden');
             
@@ -732,26 +791,29 @@
             saveQuizState();
         }
 
-        // Verifica la respuesta del usuario y programa el avance automático
+        // Verifica la respuesta del usuario
         function checkAnswer(selectedButton, selectedOption) {
             if (isAnswered) return;
 
             isAnswered = true;
             const currentQuestion = quizData[currentQuestionIndex];
             const isCorrect = selectedOption === currentQuestion.answer;
+            
+            // Agregamos la animación al botón seleccionado
+            selectedButton.classList.add('answer-pulse');
 
             if (isCorrect) {
                 score++;
                 feedback.textContent = '¡Correcto! ✅';
                 feedback.classList.remove('text-red-600');
                 feedback.classList.add('text-green-600');
-                selectedButton.classList.add('correct');
+                selectedButton.classList.add('correct', 'animate-border-correct');
                 questionCard.classList.add('card-border-correct');
             } else {
                 feedback.textContent = 'Incorrecto. ❌';
                 feedback.classList.remove('text-green-600');
                 feedback.classList.add('text-red-600');
-                selectedButton.classList.add('incorrect');
+                selectedButton.classList.add('incorrect', 'animate-border-incorrect');
                 questionCard.classList.add('card-border-incorrect');
                 
                 incorrectQuestions.push({
@@ -772,30 +834,10 @@
             showAnswerBtn.classList.add('hidden');
             saveQuizState();
             
-            // Iniciar temporizador para avanzar automáticamente después de 1.5 segundos
-            timerId = setTimeout(nextQuestion, 1500);
+            // Ahora, solo el botón "Siguiente" avanza a la siguiente pregunta.
+            nextBtn.classList.remove('hidden');
+            nextBtn.classList.add('next-pulse');
             
-            // Añadir listener al body para avance inmediato al hacer clic en cualquier lugar
-            body.addEventListener('click', skipTimer, { once: true });
-        }
-        
-        // Función para saltar el temporizador
-        function skipTimer() {
-            if (timerId) {
-                clearTimeout(timerId);
-                timerId = null;
-                nextQuestion();
-            }
-        }
-
-        // Deshabilita los botones de respuesta
-        function disableAnswerButtons() {
-            const allButtons = answersContainer.querySelectorAll('.answer-button');
-            allButtons.forEach(btn => {
-                btn.disabled = true;
-                btn.classList.remove('hover:bg-gray-200');
-                btn.classList.add('cursor-not-allowed');
-            });
         }
         
         // Muestra la respuesta correcta
@@ -807,7 +849,7 @@
             const buttons = answersContainer.querySelectorAll('.answer-button');
             buttons.forEach(btn => {
                 if (btn.textContent === currentQuestion.answer) {
-                    btn.classList.add('correct-answer-display');
+                    btn.classList.add('correct-answer-display', 'animate-border-correct');
                 }
             });
 
@@ -818,11 +860,19 @@
             disableAnswerButtons();
             showAnswerBtn.classList.add('hidden');
             
-            // Iniciar temporizador para avanzar automáticamente después de 5 segundos
-            timerId = setTimeout(nextQuestion, 5000);
-            
-            // Añadir listener al body para avance inmediato al hacer clic en cualquier lugar
-            body.addEventListener('click', skipTimer, { once: true });
+            // Hacemos visible el botón "Siguiente" para que el usuario avance manualmente.
+            nextBtn.classList.remove('hidden');
+            nextBtn.classList.add('next-pulse');
+        }
+
+        // Deshabilita los botones de respuesta
+        function disableAnswerButtons() {
+            const allButtons = answersContainer.querySelectorAll('.answer-button');
+            allButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-gray-200');
+                btn.classList.add('cursor-not-allowed');
+            });
         }
 
         // Muestra la pantalla de resultados finales
